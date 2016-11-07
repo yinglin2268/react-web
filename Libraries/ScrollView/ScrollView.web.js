@@ -54,10 +54,14 @@ class ScrollView extends Component {
     return this.refs[INNERVIEW];
   }
 
-  scrollTo(destY?: number, destX?: number) {
+  scrollTo(opts) {
     // $FlowFixMe - Don't know how to pass Mixin correctly. Postpone for now
     // this.getScrollResponder().scrollResponderScrollTo(destX || 0, destY || 0);
-    this.scrollWithoutAnimationTo(destY, destX);
+    if (typeof opts === 'number') {
+      opts = { y: opts, x: arguments[1] };
+    }
+
+    this.scrollWithoutAnimationTo(opts.y, opts.x);
   }
 
   scrollWithoutAnimationTo(destY?: number, destX?: number) {
@@ -67,9 +71,9 @@ class ScrollView extends Component {
     //   destY || 0,
     // );
 
-    let scrollView = ReactDOM.findDOMNode(this.refs[SCROLLVIEW]);
-    scrollView.scrollTop = destY || 0;
-    scrollView.scrollLeft = destX || 0;
+    this._scrollViewDom = ReactDOM.findDOMNode(this.refs[SCROLLVIEW]);
+    _scrollViewDom.scrollTop = destY || 0;
+    _scrollViewDom.scrollLeft = destX || 0;
   }
 
   handleScroll(e: Event) {
@@ -89,6 +93,12 @@ class ScrollView extends Component {
     //     dismissKeyboard();
     //   }
     // }
+
+    if (!this._scrollViewDom)
+      this._scrollViewDom = ReactDOM.findDOMNode(this.refs[SCROLLVIEW]);
+
+    e.nativeEvent = e.nativeEvent || {};
+    e.nativeEvent.contentOffset = {x:this._scrollViewDom.scrollLeft, y:this._scrollViewDom.scrollTop};
 
     this.props.onScroll && this.props.onScroll(e);
   }
@@ -147,7 +157,7 @@ class ScrollView extends Component {
 
     let handleScroll = () => {};
     if (this.props.scrollEventThrottle && this.props.onScroll) {
-      handleScroll = throttle(this.handleScroll, this.props.scrollEventThrottle);
+      handleScroll = throttle(this.handleScroll, this.props.scrollEventThrottle ? 1000/this.props.scrollEventThrottle : 1000);
     }
 
     let props = {
